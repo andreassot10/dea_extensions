@@ -6,8 +6,6 @@ dea_gle <- function(base, noutput, eff, t_values = seq(0, 1, 0.01)) {
 	s <- noutput
 	m <- ncol(base) - s
   n <- nrow(base)
-	GLE <- list() 
-	weights <- list()
 	baseNormalized <- sweep(base, 2, apply(base, 2, max), '/')
 	
 	f.dir <- c(rep("==", n), "==")
@@ -134,7 +132,6 @@ dea_gle <- function(base, noutput, eff, t_values = seq(0, 1, 0.01)) {
 	  weights_l1
 	) %>%
 	as.data.frame
-	#weights <- data.frame(unique(t(round(weights, 7))))
 	names(weights) <- c(paste("u", 1:s, sep = ""), paste("v", 1:m, sep = ""))
 	
 	GLE <- cbind(
@@ -167,5 +164,6 @@ dea_gle <- function(base, noutput, eff, t_values = seq(0, 1, 0.01)) {
 	  GLE = GLE, 
 	  weights = weights
 	)
+	
 	return(GLE)
 }

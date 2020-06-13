@@ -4,7 +4,6 @@ dea_onion <- function(base, noutput, rts = 2,
   require(Benchmarking)
   require(dplyr)
   
-  base$row_names <- 1:nrow(base)
   base_row_names <- 1:nrow(base)
   tiers <- list()
   

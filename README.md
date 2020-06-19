@@ -3,7 +3,7 @@
 This is a collection of R functions for Data Envelopment Analysis (DEA) models that I have developed either for my publications or for further data exploration in the background.
 
 ## dea_ar_type1_primal()
-Primal of DEA model with Assurance Regions (AR) of Type I.
+Primal of radial DEA model with Assurance Regions (AR) of Type I. This is model (6.11)-(6.14) in Cooper et al. (2007) and is useful for calculating radial efficiencies as well as input and output slacks.
 
 ### Arguments
 
@@ -45,4 +45,6 @@ A list with elements `GLE` and `weights`.
 For *t* = 0 the non-linear model is solved by bisection search (see Despotis, 2002, p. 317). The implementation of bisection search in `dea_gle()` sometimes results in GLE scores that are greater than 1. When that happens, these scores are set to 1. A future improvement of `dea_gle()` should ensure that the bisection search returns scores that are at most 1.
 
 ## References
+Cooper WW, Seiford L & Tone K (2007). Data Envelopment Analysis. A Comprehensive Text with Models, Applications, References and DEA-Solver Software. New York: Springer Science+Business Media, LLC.
+
 Despotis DK (2002). Improving the discriminating power of DEA: focus on globally efficient units. *Journal of the Operational Research Society* 53: 314–323. DOI: 10.1057=palgrave=jors=2601253.

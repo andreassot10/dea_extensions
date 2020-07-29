@@ -1,11 +1,12 @@
-dea_onion <- function(base, noutput, rts = 2, strong_eff = FALSE,
-  orientation = c('in', 'out'), direction = NULL,
-  dea_model = c('ccr', 'bcc', 'ddf', 'mea', 'additive')) {
+dea_onion <- function(base, noutput, rts = 2, strong_eff = FALSE) {
   
   require(Benchmarking)
   require(dplyr)
   
-  base_row_names <- 1:nrow(base)
+  X = as.matrix(base[, (noutput + 1):ncol(base)])
+  Y = as.matrix(base[, 1:noutput])
+  
+  base_row_names <- 1:nrow(X)
   tiers <- list()
   
   RTS <- ifelse(rts == 2, 'vrs', 'crs')
@@ -30,113 +31,27 @@ dea_onion <- function(base, noutput, rts = 2, strong_eff = FALSE,
     )
   }
   
-  if (dea_model %in% c('ccr', 'bcc')) {
-    re <- dea(
-      X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-      Y = as.matrix(base[, 1:noutput]), 
-      RTS = RTS,
-      ORIENTATION = orientation,
-      SLACK = strong_eff
-    )
-    
-    re <- near(re$objval, 1) & 
-      ifelse(strong_eff, !re$slack, TRUE)
-  } else if (dea_model == 'ddf') {
-    re <- dea.direct(
-      DIRECT = direction,
-      X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-      Y = as.matrix(base[, 1:noutput]), 
-      RTS = RTS,
-      ORIENTATION = orientation,
-      SLACK = strong_eff
-    )
-    
-    re <- near(re$objval, 0) & 
-      ifelse(strong_eff, !re$slack, TRUE)
-  } else if (dea_model == 'mea') {
-    me <- mea(
-      X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-      Y = as.matrix(base[, 1:noutput]), 
-      RTS = RTS,
-      ORIENTATION = orientation
-    )
-    
-    re <- dea.direct(
-      DIRECT = me$direct,
-      X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-      Y = as.matrix(base[, 1:noutput]), 
-      RTS = RTS,
-      ORIENTATION = orientation,
-      SLACK = strong_eff
-    )
-    
-    re <- !is.finite(re$objval) & 
-      ifelse(strong_eff, !re$slack, TRUE)
-  }  else if (dea_model == 'additive') {
-    re <- !dea.add(
-      X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-      Y = as.matrix(base[, 1:noutput]), 
-      RTS = RTS
-    )$slack
-  }
+  re <- dea(X, Y, RTS, SLACK = strong_eff)
+  
+  re <- near(re$objval, 1) & 
+    ifelse(strong_eff, !re$slack, TRUE)
   
   tiers[[1]] <- base_row_names[re]
   
   k <- 1
   while (!all(is.na(tiers[[k]]))) {
     k <- k + 1
-    base <- filter(base, !(base_row_names %in% tiers[[k - 1]]))
+    X <- matrix(X[!(base_row_names %in% tiers[[k - 1]]), ], 
+      ncol = ncol(base) - noutput)
+    Y <- matrix(Y[!(base_row_names %in% tiers[[k - 1]]), ], ncol = noutput)
     
-    if (nrow(base) > 1) {
-      if (dea_model %in% c('ccr', 'bcc')) {
-        re <- dea(
-          X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-          Y = as.matrix(base[, 1:noutput]), 
-          RTS = RTS,
-          ORIENTATION = orientation,
-          SLACK = strong_eff
-        )
-        
-        re <- near(re$objval, 1) & 
-          ifelse(strong_eff, !re$slack, TRUE)
-      } else if (dea_model == 'ddf') {
-        re <- dea.direct(
-          DIRECT = direction,
-          X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-          Y = as.matrix(base[, 1:noutput]), 
-          RTS = RTS,
-          ORIENTATION = orientation,
-          SLACK = strong_eff
-        )
-        
-        re <- near(re$objval, 0) & 
-          ifelse(strong_eff, !re$slack, TRUE)
-      } else if (dea_model == 'mea') {
-        me <- mea(
-          X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-          Y = as.matrix(base[, 1:noutput]), 
-          RTS = RTS,
-          ORIENTATION = orientation
-        )
-        
-        re <- dea.direct(
-          DIRECT = me$direct,
-          X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-          Y = as.matrix(base[, 1:noutput]), 
-          RTS = RTS,
-          ORIENTATION = orientation,
-          SLACK = strong_eff
-        )
-        
-        re <- !is.finite(re$objval) & 
-          ifelse(strong_eff, !re$slack, TRUE)
-      }  else if (dea_model == 'additive') {
-        re <- !dea.add(
-          X = as.matrix(base[, (noutput + 1):ncol(base)]), 
-          Y = as.matrix(base[, 1:noutput]), 
-          RTS = RTS
-        )$slack
-      }
+    base_row_names <- base_row_names[!(base_row_names %in% tiers[[k - 1]])]
+    
+    if (nrow(X) > 1) {
+      re <- dea(X, Y, RTS, SLACK = strong_eff)
+      
+      re <- near(re$objval, 1) & 
+        ifelse(strong_eff, !re$slack, TRUE)
       
       tiers[[k]] <- base_row_names[re]
     } else {
@@ -145,8 +60,16 @@ dea_onion <- function(base, noutput, rts = 2, strong_eff = FALSE,
     
   }
   
-  tiers[[k]] <- base_row_names[-unlist(tiers[-k])]
+  tiers[[k]] <- base_row_names
   names(tiers) <- paste0('tier_', 1:k)
+  tiers <- Filter(Negate(function(x) length(x) == 0), tiers)
+  
+  tiers <- do.call(rbind, lapply(tiers, as.data.frame)) %>%
+    mutate(
+      tier = gsub("\\..*", "", rownames(.)),
+      tier = sub('tier_', '', tier)
+    ) %>%
+    rename_at(vars(-contains('tier')), ~ 'dmu')
   
   return(tiers)
 }

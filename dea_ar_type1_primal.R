@@ -1,5 +1,8 @@
 dea_ar_type1_primal <- function (base, noutput, rts = 1, orientation = 1, 
   bounds = NULL, duals = TRUE) {
+  
+  require(lpSolveAPI)
+  
   s <- noutput
   m <- ncol(base) - s
   n <- nrow(base)
@@ -87,9 +90,19 @@ dea_ar_type1_primal <- function (base, noutput, rts = 1, orientation = 1,
       paste('dual.x', 1:m, sep = ''))
     re <- data.frame(re, d.yx)
   }
-  lpmodel <- make.lp(nrow = m + s + 1, ncol = 1 + n + (2 * s - 2) + (2 * m - 2))
-  set.objfn(lpmodel, c(1, rep(0, n + (2 * s - 2) + (2 * m - 2))))
-  set.constr.type(lpmodel, types = type, constraints = 1:(m + s + 1))
+  lpmodel <- make.lp(
+    nrow = m + s + 1, 
+    ncol = 1 + n + (2 * s - 2) + (2 * m - 2)
+  )
+  set.objfn(
+    lpmodel, 
+    c(1, rep(0, n + (2 * s - 2) + (2 * m - 2)))
+  )
+  set.constr.type(
+    lpmodel, 
+    types = type, 
+    constraints = 1:(m + s + 1)
+  )
   for (i in 1:nrow(base)) {
     A <- data.frame(thetaColumn = unlist(base[i, ] * thetaColumn), A.aux)
     A <- rbind(A, A_finalRow)
